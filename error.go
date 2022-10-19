@@ -91,7 +91,7 @@ func New(e interface{}) *Error {
 // fmt.Errorf("%v"). The skip parameter indicates how far up the stack
 // to start the stacktrace. 0 is from the current call, 1 from its caller, etc.
 func Wrap(e interface{}, skip int) *Error {
-	if e == nil {
+	if IsUninitialized(e) {
 		return nil
 	}
 
@@ -112,6 +112,20 @@ func Wrap(e interface{}, skip int) *Error {
 		Err:   err,
 		stack: stack[:length],
 	}
+}
+
+// IsUninitialized returns true if the error is nil or is zero value
+func IsUninitialized(i interface{}) bool {
+	if i == nil {
+		return true
+	}
+	switch reflect.TypeOf(i).Kind() {
+	case reflect.Struct:
+		return reflect.ValueOf(i).IsZero()
+	case reflect.Ptr, reflect.Map, reflect.Array, reflect.Chan, reflect.Slice:
+		return reflect.ValueOf(i).IsNil()
+	}
+	return false
 }
 
 // WrapPrefix makes an Error from the given value. If that value is already an
